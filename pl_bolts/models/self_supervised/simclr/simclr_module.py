@@ -351,7 +351,7 @@ class SimCLR(pl.LightningModule):
         parser.add_argument("--learning_rate", default=1e-3, type=float, help="base learning rate")
         parser.add_argument("--start_lr", default=0, type=float, help="initial warmup learning rate")
         parser.add_argument("--final_lr", type=float, default=1e-6, help="final learning rate")
-        parser.add_argument('--sharded', type=bool, default=False)
+        parser.add_argument('--sharded', action='store_true')
         return parser
 
 
