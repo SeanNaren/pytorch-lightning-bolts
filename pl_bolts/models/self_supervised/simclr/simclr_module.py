@@ -351,7 +351,7 @@ class SimCLR(pl.LightningModule):
         parser.add_argument("--learning_rate", default=1e-3, type=float, help="base learning rate")
         parser.add_argument("--start_lr", default=0, type=float, help="initial warmup learning rate")
         parser.add_argument("--final_lr", type=float, default=1e-6, help="final learning rate")
-
+        parser.add_argument('--sharded', type=bool, default=False)
         return parser
 
 
@@ -475,7 +475,8 @@ def cli_main():
         sync_batchnorm=True if args.gpus > 1 else False,
         precision=32 if args.fp32 else 16,
         callbacks=[online_evaluator] if args.online_ft else None,
-        fast_dev_run=args.fast_dev_run
+        fast_dev_run=args.fast_dev_run,
+        plugins='ddp_sharded' if args.sharded else None,
     )
 
     trainer.fit(model, dm)
