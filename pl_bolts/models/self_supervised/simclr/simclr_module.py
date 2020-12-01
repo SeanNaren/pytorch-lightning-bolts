@@ -11,6 +11,7 @@ from pytorch_lightning.utilities import AMPType
 from torch import nn
 from torch.optim.optimizer import Optimizer
 
+from pl_bolts.callbacks.cuda_callback import CUDACallback
 from pl_bolts.models.self_supervised.resnets import resnet18, resnet50
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.transforms.dataset_normalizations import (
@@ -40,8 +41,8 @@ class SyncFunction(torch.autograd.Function):
         torch.distributed.all_reduce(grad_input, op=torch.distributed.ReduceOp.SUM, async_op=False)
 
         return grad_input[
-            torch.distributed.get_rank() * ctx.batch_size:(torch.distributed.get_rank() + 1) * ctx.batch_size
-        ]
+               torch.distributed.get_rank() * ctx.batch_size:(torch.distributed.get_rank() + 1) * ctx.batch_size
+               ]
 
 
 class Projection(nn.Module):
@@ -64,28 +65,28 @@ class Projection(nn.Module):
 
 class SimCLR(pl.LightningModule):
     def __init__(
-        self,
-        gpus: int,
-        num_samples: int,
-        batch_size: int,
-        dataset: str,
-        nodes: int = 1,
-        arch: str = 'resnet50',
-        hidden_mlp: int = 2048,
-        feat_dim: int = 128,
-        warmup_epochs: int = 10,
-        max_epochs: int = 100,
-        temperature: float = 0.1,
-        first_conv: bool = True,
-        maxpool1: bool = True,
-        optimizer: str = 'adam',
-        lars_wrapper: bool = True,
-        exclude_bn_bias: bool = False,
-        start_lr: float = 0.,
-        learning_rate: float = 1e-3,
-        final_lr: float = 0.,
-        weight_decay: float = 1e-6,
-        **kwargs
+            self,
+            gpus: int,
+            num_samples: int,
+            batch_size: int,
+            dataset: str,
+            nodes: int = 1,
+            arch: str = 'resnet50',
+            hidden_mlp: int = 2048,
+            feat_dim: int = 128,
+            warmup_epochs: int = 10,
+            max_epochs: int = 100,
+            temperature: float = 0.1,
+            first_conv: bool = True,
+            maxpool1: bool = True,
+            optimizer: str = 'adam',
+            lars_wrapper: bool = True,
+            exclude_bn_bias: bool = False,
+            start_lr: float = 0.,
+            learning_rate: float = 1e-3,
+            final_lr: float = 0.,
+            weight_decay: float = 1e-6,
+            **kwargs
     ):
         """
         Args:
@@ -141,7 +142,7 @@ class SimCLR(pl.LightningModule):
         )
         iters = np.arange(self.train_iters_per_epoch * (self.max_epochs - self.warmup_epochs))
         cosine_lr_schedule = np.array([self.final_lr + 0.5 * (self.learning_rate - self.final_lr) * (
-            1 + math.cos(math.pi * t / (self.train_iters_per_epoch * (self.max_epochs - self.warmup_epochs)))
+                1 + math.cos(math.pi * t / (self.train_iters_per_epoch * (self.max_epochs - self.warmup_epochs)))
         ) for t in iters])
 
         self.lr_schedule = np.concatenate((warmup_lr_schedule, cosine_lr_schedule))
@@ -242,15 +243,15 @@ class SimCLR(pl.LightningModule):
         return optimizer
 
     def optimizer_step(
-        self,
-        epoch: int,
-        batch_idx: int,
-        optimizer: Optimizer,
-        optimizer_idx: int,
-        optimizer_closure: Optional[Callable] = None,
-        on_tpu: bool = False,
-        using_native_amp: bool = False,
-        using_lbfgs: bool = False,
+            self,
+            epoch: int,
+            batch_idx: int,
+            optimizer: Optimizer,
+            optimizer_idx: int,
+            optimizer_closure: Optional[Callable] = None,
+            on_tpu: bool = False,
+            using_native_amp: bool = False,
+            using_lbfgs: bool = False,
     ) -> None:
         # warm-up + decay schedule placed here since LARSWrapper is not optimizer class
         # adjust LR of optim contained within LARSWrapper
@@ -467,14 +468,13 @@ def cli_main():
         )
 
     trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
-        max_steps=None if args.max_steps == -1 else args.max_steps,
+        max_epochs=1,
+        limit_val_batches=0,
         gpus=args.gpus,
-        num_nodes=args.nodes,
-        distributed_backend='ddp' if args.gpus > 1 else None,
-        sync_batchnorm=True if args.gpus > 1 else False,
-        precision=32 if args.fp32 else 16,
-        callbacks=[online_evaluator] if args.online_ft else None,
+        accelerator='ddp',
+        sync_batchnorm=False,
+        precision=16,
+        callbacks=[CUDACallback()],
         fast_dev_run=args.fast_dev_run,
         plugins='ddp_sharded' if args.sharded else None,
     )

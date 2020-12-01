@@ -14,6 +14,7 @@ from pytorch_lightning.utilities import AMPType
 from torch import nn
 from torch.optim.optimizer import Optimizer
 
+from pl_bolts.callbacks.cuda_callback import CUDACallback
 from pl_bolts.models.self_supervised.swav.swav_resnet import resnet18, resnet50
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.transforms.dataset_normalizations import (
@@ -473,7 +474,7 @@ class SwAV(pl.LightningModule):
                             help="from this epoch, we start using a queue")
         parser.add_argument("--freeze_prototypes_epochs", default=1, type=int,
                             help="freeze the prototypes during this many epochs from the start")
-
+        parser.add_argument('--sharded', action='store_true')
         return parser
 
 
@@ -594,15 +595,15 @@ def cli_main():
         )
 
     trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
-        max_steps=None if args.max_steps == -1 else args.max_steps,
+        max_epochs=1,
+        limit_val_batches=0,
         gpus=args.gpus,
-        num_nodes=args.nodes,
-        distributed_backend='ddp' if args.gpus > 1 else None,
-        sync_batchnorm=True if args.gpus > 1 else False,
-        precision=32 if args.fp32 else 16,
-        callbacks=[online_evaluator] if args.online_ft else None,
-        fast_dev_run=args.fast_dev_run
+        accelerator='ddp',
+        sync_batchnorm=False,
+        precision=16,
+        callbacks=[CUDACallback()],
+        fast_dev_run=args.fast_dev_run,
+        plugins='ddp_sharded' if args.sharded else None,
     )
 
     trainer.fit(model, dm)
