@@ -35,6 +35,7 @@ def cli_main():  # pragma: no-cover
     parser.add_argument('--learning_rate', type=float, default=0.3)
     parser.add_argument('--weight_decay', type=float, default=1e-6)
     parser.add_argument('--nesterov', type=bool, default=False)
+    parser.add_argument('--sharded', type=bool, default=False)
     parser.add_argument('--scheduler_type', type=str, default='cosine')
     parser.add_argument('--gamma', type=float, default=0.1)
     parser.add_argument('--final_lr', type=float, default=0.)
@@ -154,8 +155,10 @@ def cli_main():  # pragma: no-cover
         gpus=args.gpus,
         num_nodes=1,
         precision=16,
-        max_epochs=args.num_epochs,
-        distributed_backend='ddp',
+        max_epochs=1,
+        limit_val_batches=0,
+        accelerator='ddp',
+        plugins='ddp_sharded' if args.sharded else None,
         sync_batchnorm=True if args.gpus > 1 else False,
         callbacks=[CUDACallback()]
     )
