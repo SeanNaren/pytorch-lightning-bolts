@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
+from pl_bolts.callbacks.cuda_callback import CUDACallback
 from pl_bolts.models.self_supervised.simclr.simclr_module import SimCLR
 from pl_bolts.models.self_supervised.simclr.transforms import SimCLRFinetuneTransform
 from pl_bolts.models.self_supervised.ssl_finetuner import SSLFineTuner
@@ -156,6 +157,7 @@ def cli_main():  # pragma: no-cover
         max_epochs=args.num_epochs,
         distributed_backend='ddp',
         sync_batchnorm=True if args.gpus > 1 else False,
+        callbacks=[CUDACallback()]
     )
 
     trainer.fit(tuner, dm)

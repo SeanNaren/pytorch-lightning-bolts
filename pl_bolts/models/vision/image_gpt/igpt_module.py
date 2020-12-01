@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
+from pl_bolts.callbacks.cuda_callback import CUDACallback
 from pl_bolts.models.vision.image_gpt.gpt2 import GPT2
 
 
@@ -257,7 +258,7 @@ def cli_main():
 
     model = ImageGPT(**args.__dict__)
 
-    trainer = pl.Trainer.from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[CUDACallback()])
     trainer.fit(model, datamodule=datamodule)
 
 
