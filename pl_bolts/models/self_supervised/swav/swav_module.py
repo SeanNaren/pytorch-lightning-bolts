@@ -162,7 +162,7 @@ class SwAV(pl.LightningModule):
 
     def setup(self, stage):
         queue_folder = os.path.join(self.logger.log_dir, self.queue_path)
-        if not os.path.exists(queue_folder):
+        if not os.path.exists(queue_folder) and self.trainer.global_rank == 0:
             os.makedirs(queue_folder)
 
         self.queue_path = os.path.join(
