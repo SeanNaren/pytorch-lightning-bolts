@@ -15,7 +15,7 @@ from torch import nn
 from torch.optim.optimizer import Optimizer
 
 from pl_bolts.callbacks.cuda_callback import CUDACallback
-from pl_bolts.models.self_supervised.swav.swav_resnet import resnet18, resnet50
+from pl_bolts.models.self_supervised.swav.swav_resnet import resnet18, resnet50, resnet50w5
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.transforms.dataset_normalizations import (
     cifar10_normalization,
@@ -177,7 +177,7 @@ class SwAV(pl.LightningModule):
         if self.arch == 'resnet18':
             backbone = resnet18
         elif self.arch == 'resnet50':
-            backbone = resnet50
+            backbone = resnet50w5
 
         return backbone(
             normalize=True,
